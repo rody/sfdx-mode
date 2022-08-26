@@ -105,7 +105,8 @@ return nil."
   (let ((absdir (file-truename outputdir)))
   (unless (file-exists-p absdir)
     (make-directory absdir :parents))
-  (shell-command (format "sfdx force:apex:class:create --template=DefaultApexClass --outputdir='%s' --classname='%s'" absdir classname))))
+  (shell-command (format "sfdx force:apex:class:create --template=DefaultApexClass --outputdir='%s' --classname='%s'" absdir classname))
+  (find-file (concat (file-name-as-directory absdir) classname ".cls"))))
 
 (defgroup sfdx-mode nil
   "Customization group for sfdx-mode."
