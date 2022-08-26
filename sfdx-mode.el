@@ -97,21 +97,26 @@ return nil."
   (message "Opening org %s..." org-name)
   (shell-command (concat "sfdx force:org:open -u \"" org-name "\"")))
 
+(defun sfdx-mode-apex-class-create (outputdir classname)
+  "Creates a new Apex class file"
+  (interactive (list
+		(read-directory-name "Output dir: ")
+		(read-string "Class name: ")))
+  (let ((absdir (file-truename outputdir)))
+  (unless (file-exists-p absdir)
+    (make-directory absdir :parents))
+  (shell-command (format "sfdx force:apex:class:create --template=DefaultApexClass --outputdir='%s' --classname='%s'" absdir classname))))
+
 (defgroup sfdx-mode nil
   "Customization group for sfdx-mode."
   :group 'convenience)
 
-(defvar sfdx-mode-keymap
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd sfdx-mode-command-prefix) sfdx-mode-command-keymap))
+(defvar sfdx-mode-keymap (make-sparse-keymap)
   "Keymap for sfdx-mode.")
 
-(define-key sfdx-mode-keymap
-  (kbd "C-c s o l") 'sfdx-mode-org-list)
-(define-key sfdx-mode-keymap
-  (kbd "C-c s o o") 'sfdx-mode-org-open)
-(define-key sfdx-mode-keymap
-  (kbd "C-c s p v") 'sfdx-mode-visit-project-file)
+(define-key sfdx-mode-keymap (kbd "C-c s o l") 'sfdx-mode-org-list)
+(define-key sfdx-mode-keymap (kbd "C-c s o o") 'sfdx-mode-org-open)
+(define-key sfdx-mode-keymap (kbd "C-c s p v") 'sfdx-mode-visit-project-file)
 
 ;;;###autoload
 (define-minor-mode sfdx-mode
