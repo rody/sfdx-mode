@@ -52,25 +52,23 @@ return nil."
   (interactive)
   (find-file (sfdx-mode--project-file)))
 
-(defun sfdx-mode-org-list ()
-  "List all orgs you've created or authenticated to"
-  (interactive)
-  (sfdx-mode--exec-process "sfdx force:org:list --all --skipconnectionstatus"))
-
 (defun sfdx-mode-org-list-clean ()
   "Remove all local org authorizations for non-active orgs."
   (interactive)
-  (sfdx-mode--exec-process "sfdx force:org:list --clean --noprompt"))
+  (shell-command "sfdx force:org:list --clean --noprompt"))
 
 (defvar sfdx-mode--org-names-cache '())
+(defvar sfdx-mode--devhub-names-cache '())
 
-(defun sfdx-mode-invalidate-org-names-cache ()
-  "Invalidates the org names cache"
+(defun sfdx-mode-invalidate-org-list-cache ()
+  "Invalidate the org names cache."
   (interactive)
-  (setq sfdx-mode--org-names-cache '()))
+  (setq sfdx-mode--org-names-cache '())
+  (setq sfdx-mode--devhub-names-cache '()))
 
-(defun sfdx-mode--list-usernames ()
-  "Returns all usernames"
+(defun sfdx-mode-refresh-org-list-cache ()
+  "Refresh the org list cache."
+  (interactive)
   (message "Retrieving org usernames/aliases (this may take some time)...")
   (let* ((json-object-type 'hash-table)
          (json-array-type 'list)
@@ -78,27 +76,58 @@ return nil."
          (json (json-parse-string (shell-command-to-string "sfdx force:org:list --skipconnectionstatus --json 2> /dev/null")))
          (result (gethash "result" json))
          (scratch-orgs (gethash "scratchOrgs" result))
-         (non-scratch-orgs (gethash "nonScratchOrgs" result))
-         (usernames ()))
-    (mapc (lambda(arg) (push (gethash "alias" arg (gethash "username" arg)) usernames)) non-scratch-orgs)
-    (mapc (lambda(arg) (push (gethash "alias" arg (gethash "username" arg)) usernames)) scratch-orgs)
-    usernames))
+         (non-scratch-orgs (gethash "nonScratchOrgs" result)))
+    (sfdx-mode-invalidate-org-list-cache)
+    (mapc (lambda(arg) (push (gethash "alias" arg (gethash "username" arg)) sfdx-mode--org-names-cache)) non-scratch-orgs)
+    (mapc (lambda(arg) (push (gethash "alias" arg (gethash "username" arg)) sfdx-mode--org-names-cache)) scratch-orgs)
+    (mapc (lambda(arg)
+	    (let ((is-devhub (gethash "isDevHub" arg :false)))
+	      (unless (eq is-devhub :false)
+		  (push (gethash "alias" arg (gethash "username" arg)) sfdx-mode--devhub-names-cache)))
+	    ) non-scratch-orgs)
+    (sort sfdx-mode--org-names-cache '<)
+    (sort sfdx-mode--devhub-names-cache '<)
+))
 
 (defun sfdx-mode--org-names ()
-  "Returns all org names"
-  (interactive)
-  (if sfdx-mode--org-names-cache
-      sfdx-mode--org-names-cache
-    (setq sfdx-mode--org-names-cache (sfdx-mode--list-usernames))))
+  "Return all org names/aliases."
+  (unless sfdx-mode--org-names-cache
+    (sfdx-mode-refresh-org-list-cache))
+  sfdx-mode--org-names-cache)
+
+(defun sfdx-mode--devhub-names ()
+  "Return all devhub names/aliases."
+  (unless sfdx-mode--devhub-names-cache
+    (sfdx-mode-refresh-org-list-cache))
+  sfdx-mode--devhub-names-cache)
 
 (defun sfdx-mode-org-open (org-name)
-  "Open an org in the browser"
+  "Open an org in the browser.
+
+  ORG-NAME name or alias of the org"
+
   (interactive (list (completing-read "org: " (sfdx-mode--org-names))))
   (message "Opening org %s..." org-name)
   (shell-command (concat "sfdx force:org:open -u \"" org-name "\"")))
 
+(defun sfdx-mode-create-scratch-org (devhub config alias)
+  "Create a scratch org.
+
+   DEVHUB Dev Hub username or alias"
+
+  (interactive (list (completing-read "devhub: " (sfdx-mode--devhub-names))
+		     (read-file-name "config: ")
+		     (read-string "alias: ")))
+  (unless (sfdx-mode--ensure-sfdx-project)
+    (message "this command must be run inside an sfdx project")
+  (shell-command (format "sfdx force:org:create --type=scratch --targetdevhubusername='%s' --configfile='%s' -a '%s' -json" devhub config alias))))
+
 (defun sfdx-mode-apex-class-create (outputdir classname)
-  "Creates a new Apex class file"
+  "Create a new Apex class file.
+
+   OUTPUTDIR output directory
+   CLASSNAME name of the class to create"
+
   (interactive (list
 		(read-directory-name "Output dir: ")
 		(read-string "Class name: ")))
