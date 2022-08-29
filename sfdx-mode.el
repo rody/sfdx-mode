@@ -38,16 +38,6 @@ return nil."
       (error (concat "Error: cannot find " sfdx-mode--project-file-name)))
     (concat dir sfdx-mode--project-file-name)))
 
-(defun sfdx-mode--exec-process (cmd &optional comint)
-  "Execute a process running CMD."
-  (let ((compilation-buffer-name-function
-         (lambda (mode)
-           (format "*sfdx:%s*" cmd))))
-    (message (concat "Running " cmd))
-    (compile cmd comint)
-    (message (concat "Done." cmd))
-    ))
-
 (defun sfdx-mode-visit-project-file ()
   "Visit the project file."
   (interactive)
@@ -114,7 +104,9 @@ return nil."
 (defun sfdx-mode-create-scratch-org (devhub config alias)
   "Create a scratch org.
 
-   DEVHUB Dev Hub username or alias"
+   DEVHUB Dev Hub username or alias
+   CONFIG the scratch org config file
+   ALIAS the alias to create"
 
   (interactive (list (completing-read "devhub: " (sfdx-mode--devhub-names))
 		     (read-file-name "config: ")
@@ -151,7 +143,7 @@ return nil."
 
 ;;;###autoload
 (define-minor-mode sfdx-mode
-  "Minor mode for working with sfdx projects"
+  "Minor mode for working with sfdx projects."
   :global nil
   :lighter sfdx-mode--modeline-name
   :keymap sfdx-mode-keymap
