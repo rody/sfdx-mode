@@ -16,6 +16,7 @@
 ;;; Code:
 (require 'compile)
 (require 'json)
+(require 'cl-lib)
 
 (defvar sfdx-mode--project-file-name "sfdx-project.json"
   "The name of sfdx project file.")
@@ -85,8 +86,8 @@ return nil."
 	      (unless (eq is-devhub :false)
 		  (push (gethash "alias" arg (gethash "username" arg)) sfdx-mode--devhub-names-cache)))
 	    ) non-scratch-orgs)
-    (sort sfdx-mode--org-names-cache '<)
-    (sort sfdx-mode--devhub-names-cache '<)
+    (cl-sort sfdx-mode--org-names-cache 'string-lessp :key 'downcase)
+    (cl-sort sfdx-mode--devhub-names-cache 'string-lessp :key 'downcase)
 ))
 
 (defun sfdx-mode--org-names ()
