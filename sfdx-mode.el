@@ -130,6 +130,15 @@ return nil."
   (shell-command (format "sfdx force:apex:class:create --template=DefaultApexClass --outputdir='%s' --classname='%s'" absdir classname))
   (find-file (concat (file-name-as-directory absdir) classname ".cls"))))
 
+(defun sfdx-mode-apex-get-latest-log (org-name)
+  "Retrieve the latest Apex log.
+
+   ORG-NAME name or alias for the org"
+  (interactive (list (completing-read "org: " (sfdx-mode--org-names))))
+  (with-temp-message "retrieving latest log...")
+  (with-output-to-temp-buffer "*Apex log*"
+    (shell-command (format "sfdx force:apex:log:get --number 1 -u '%s'" org-name) "*Apex log*" "*sfdx-errors*")))
+
 (defgroup sfdx-mode nil
   "Customization group for sfdx-mode."
   :group 'convenience)
