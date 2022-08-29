@@ -135,9 +135,22 @@ return nil."
 
    ORG-NAME name or alias for the org"
   (interactive (list (completing-read "org: " (sfdx-mode--org-names))))
-  (with-temp-message "retrieving latest log...")
+  (message "retrieving latest log...")
   (with-output-to-temp-buffer "*Apex log*"
     (shell-command (format "sfdx force:apex:log:get --number 1 -u '%s'" org-name) "*Apex log*" "*sfdx-errors*")))
+
+(defun sfdx-mode-apex-eval-buffer-or-region (org-name)
+  "Execute buffer as anonymous apex.
+
+   ORG-NAME name or alias for the org"
+  (interactive (list (completing-read "org: " (sfdx-mode--org-names))))
+  (let ((tmpfile (make-temp-file "apex")))
+    (if (use-region-p) ; if text is selected
+	(write-region (region-beginning) (region-end) tmpfile)
+      (write-region nil nil tmpfile))
+    (shell-command (format "sfdx force:apex:execute -f '%s' -u '%s'" tmpfile org-name) "*Apex log*" "*Messages*")))
+  
+
 
 (defgroup sfdx-mode nil
   "Customization group for sfdx-mode."
