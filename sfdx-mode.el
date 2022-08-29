@@ -150,7 +150,33 @@ return nil."
       (write-region nil nil tmpfile))
     (shell-command (format "sfdx force:apex:execute -f '%s' -u '%s'" tmpfile org-name) "*Apex log*" "*Messages*")))
   
+(defun sfdx-mode-execute-soql-from-buffer-or-region (org-name)
+  "Execute a SOQL query.
 
+   ORG-NAME name or alias for the org"
+  (interactive (list (completing-read "org: " (sfdx-mode--org-names))))
+  (let ((query . ((if (use-region-p)
+		      (buffer-substring (region-beginning) (region-end))
+		      (buffer-string)))))
+    (shell-command (format "sfdx force:data:soql:query --resultformat csv --targetusername '%s' --query \"%s\"" org-name query) "*SOQL Result*" "*SOQL errors*")
+    (pop-to-buffer "*SOQL Result*")
+    (if (fboundp 'csv-align-mode)
+	(csv-align-mode)
+        nil)))
+  
+(defun sfdx-mode-execute-tooling-query-from-buffer-or-region (org-name)
+  "Execute a SOQL query.
+
+   ORG-NAME name or alias for the org"
+  (interactive (list (completing-read "org: " (sfdx-mode--org-names))))
+  (let ((query . ((if (use-region-p)
+		      (buffer-substring (region-beginning) (region-end))
+		      (buffer-string)))))
+    (shell-command (format "sfdx force:data:soql:query --usetoolingapi --resultformat csv --targetusername '%s' --query \"%s\"" org-name query) "*SOQL Result*" "*SOQL errors*")
+    (pop-to-buffer "*SOQL Result*")
+    (if (fboundp 'csv-align-mode)
+	(csv-align-mode)
+        nil)))
 
 (defgroup sfdx-mode nil
   "Customization group for sfdx-mode."
